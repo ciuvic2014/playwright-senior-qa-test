@@ -35,10 +35,10 @@ test('Senior QA Job Search and Application', async ({ page }) => {
     
     // Click Careers from dropdown
     await page.locator('a[role="menuitem"]:has-text("Careers")').click();
-    await page.waitForLoadState('networkidle');
     
-    // Verify Explore Positions button and click it
-    await expect(page.locator('a.cta-button:has-text("Explore Positions")')).toBeVisible();
+    // Wait for Explore Positions button to be visible instead of networkidle
+    const explorePositionsButton = page.locator('a.cta-button:has-text("Explore Positions")');
+    await expect(explorePositionsButton).toBeVisible();
     
     // Click Explore Positions (opens new tab)
     const [newPage] = await Promise.all([
@@ -48,10 +48,13 @@ test('Senior QA Job Search and Application', async ({ page }) => {
     
     // Close original tab and switch to new one
     await page.close();
-    await newPage.waitForLoadState('networkidle');
+    
+    // Wait for the search filter to be available instead of networkidle
+    const keywordFilter = newPage.locator('#keyword-filter');
+    await keywordFilter.waitFor({ state: 'visible', timeout: 10000 });
     
     // Search for QA jobs
-    await newPage.locator('#keyword-filter').scrollIntoViewIfNeeded();
+    await keywordFilter.scrollIntoViewIfNeeded();
     await newPage.locator('#keyword-filter').fill('QA');
     await newPage.waitForTimeout(3000);
     
@@ -59,18 +62,18 @@ test('Senior QA Job Search and Application', async ({ page }) => {
     const seniorQALink = newPage.locator('a:has-text("Senior QA Engineer")');
     await seniorQALink.scrollIntoViewIfNeeded();
     await seniorQALink.click();
-    await newPage.waitForLoadState('networkidle');
     
-    // Verify we're on the job page
-    await expect(newPage.locator('h1:has-text("Senior QA Engineer")')).toBeVisible();
+    // Wait for job page to load by checking for the job title
+    const jobTitle = newPage.locator('h1:has-text("Senior QA Engineer")');
+    await expect(jobTitle).toBeVisible();
     
-    // Click Apply button
+    // Click Apply button and wait for form to appear
     await newPage.locator('button:has-text("Apply")').click();
-    await newPage.waitForLoadState('networkidle');
-    await newPage.waitForTimeout(2000);
     
-    // Verify application form loaded
-    await expect(newPage.locator('h2:has-text("Apply for this job")')).toBeVisible();
+    // Wait for application form to load
+    const applicationForm = newPage.locator('h2:has-text("Apply for this job")');
+    await expect(applicationForm).toBeVisible();
+    await newPage.waitForTimeout(2000);
     
     // Verify and highlight form fields
     const firstNameField = newPage.getByRole('textbox', { name: 'First Name' });
