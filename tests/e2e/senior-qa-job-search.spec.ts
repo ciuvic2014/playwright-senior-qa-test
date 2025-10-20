@@ -1,20 +1,30 @@
 import { test, expect } from '@playwright/test';
 
 test('Senior QA Job Search and Application', async ({ page }) => {
-    // Go to Arine website
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    // Go to Arine website with longer timeout
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30000 });
     
-    // Accept cookies if modal appears
+    // Close cookie modal if it appears
     try {
-        const cookieModal = page.locator('#hs-eu-cookie-confirmation');
-        if (await cookieModal.isVisible({ timeout: 3000 })) {
-            await page.locator('#hs-eu-confirmation-button').click();
-            await cookieModal.waitFor({ state: 'hidden', timeout: 5000 });
+        // Try to find and click the close button
+        const closeButton = page.locator('#hs-eu-close-button');
+        await closeButton.waitFor({ state: 'visible', timeout: 5000 });
+        await closeButton.click();
+        await page.waitForTimeout(1000);
+    } catch (error) {
+        // Fallback: try the × button text selector
+        try {
+            const fallbackCloseButton = page.locator('button:has-text("×")').first();
+            await fallbackCloseButton.waitFor({ state: 'visible', timeout: 3000 });
+            await fallbackCloseButton.click();
+        } catch (fallbackError) {
+            // Cookie modal might not appear, continue
         }
-    } catch {
-        // Cookie modal might not appear, continue
     }
+    
+    // Wait for the About button to be present
+    const aboutButton = page.locator('button:has-text("About")').first();
+    await aboutButton.waitFor({ state: 'visible', timeout: 5000 });
     
     // Verify we're on the right page
     await expect(page).toHaveTitle(/Arine/);
